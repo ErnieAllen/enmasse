@@ -26,7 +26,10 @@ fi
 SCRIPTDIR=`dirname $0`
 ENMASSE_TEMPLATE=$SCRIPTDIR/openshift/enmasse.yaml
 KEYCLOAK_TEMPLATE=$SCRIPTDIR/openshift/addons/keycloak.yaml
-KEYCLOAK_TEMPLATE_PARAMS=""
+KEYCLOAK_PASSWORD=`head /dev/urandom | LC_CTYPE=C tr -dc A-Za-z0-9 | head -c 128`
+NONE_AUTHSERVICE_TEMPLATE=$SCRIPTDIR/openshift/addons/none-authservice.yaml
+AUTH_SERVICES=none
+
 TEMPLATE_NAME=enmasse
 TEMPLATE_PARAMS=""
 
@@ -35,8 +38,11 @@ DEFAULT_NAMESPACE=myproject
 OC_ARGS=""
 GUIDE=false
 
-while getopts c:dgk:m:n:p:st:u:yvh opt; do
+while getopts a:c:dgm:n:p:st:u:yvh opt; do
     case $opt in
+        a)
+            AUTH_SERVICES=$OPTARG
+            ;;
         c)
             CA_SECRET=$OPTARG
             ;;
@@ -45,9 +51,6 @@ while getopts c:dgk:m:n:p:st:u:yvh opt; do
             ;;
         g)
             GUIDE=true
-            ;;
-        k)
-            KEYCLOAK_PASSWORD=$OPTARG
             ;;
         m)
             MASTER_URI=$OPTARG
@@ -82,9 +85,9 @@ while getopts c:dgk:m:n:p:st:u:yvh opt; do
             echo
             echo "optional arguments:"
             echo "  -h                   show this help message"
+            echo "  -a "none standard"   The authentication services to deploy (default: none)"
             echo "  -c                   CA certificate to use in address controller"
             echo "  -d                   create an all-in-one docker OpenShift on localhost"
-            echo "  -k KEYCLOAK_PASSWORD Deploy standard authentication service (keycloak) and use given password as admin password"
             echo "  -n NAMESPACE         OpenShift project name to install EnMasse into (default: $DEFAULT_NAMESPACE)"
             echo "  -m MASTER            OpenShift master URI to login against (default: https://localhost:8443)"
             echo "  -p PARAMS            Custom template parameters to pass to EnMasse template ('cat $SCRIPTDIR/openshift/enmasse.yaml' to get a list of available parameters)"
@@ -167,12 +170,21 @@ else
 fi
 
 create_and_sign_cert "oc" $CA_KEY $CA_CERT "address-controller.${NAMESPACE}.svc.cluster.local" "address-controller-cert"
-create_self_signed_cert "oc" "none-authservice.${NAMESPACE}.svc.cluster.local" "none-authservice-cert"
 
-if [ -n "$KEYCLOAK_PASSWORD" ]; then
-    create_self_signed_cert "oc" "standard-authservice.${NAMESPACE}.svc.cluster.local" "standard-authservice-cert"
-    runcmd "oc create secret generic keycloak-credentials --from-literal=admin.username=admin --from-literal=admin.password=$KEYCLOAK_PASSWORD" "Create secret with keycloak admin credentials"
-    runcmd "oc process -f $KEYCLOAK_TEMPLATE $KEYCLOAK_TEMPLATE_PARAMS | oc create -n $NAMESPACE -f -" "Instantiate keycloak template"
+for auth_service in $AUTH_SERVICES
+do
+    if [ "$auth_service" == "standard" ]; then
+        create_self_signed_cert "oc" "standard-authservice.${NAMESPACE}.svc.cluster.local" "standard-authservice-cert"
+        runcmd "oc create secret generic keycloak-credentials --from-literal=admin.username=admin --from-literal=admin.password=$KEYCLOAK_PASSWORD" "Create secret with keycloak admin credentials"
+        runcmd "oc process -f $KEYCLOAK_TEMPLATE | oc create -n $NAMESPACE -f -" "Instantiate keycloak template"
+    else if [ "$auth_service" == "none" ]; then
+        create_self_signed_cert "oc" "none-authservice.${NAMESPACE}.svc.cluster.local" "none-authservice-cert"
+        runcmd "oc process -f $NONE_AUTHSERVICE_TEMPLATE | oc create -n $NAMESPACE -f -" "Instantiate none-authservice template"
+    else if [ "$auth_service" == "external" ]; then
+    else
+        echo "Unknown authentication service $auth_service cannot be deployed" 
+        exit 1
+    fi
 fi
 
 if [[ $TEMPLATE_PARAMS == *"MULTIINSTANCE=true"* ]]; then

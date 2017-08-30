@@ -20,8 +20,6 @@ local images = import "images.jsonnet";
                  storage.template(true, false),
                  storage.template(true, true),
                  enmasseInfra.generate(with_kafka, true),
-                 authService.none_deployment("${NONE_AUTHSERVICE_IMAGE}", "${NONE_AUTHSERVICE_CERT_SECRET_NAME}"),
-                 authService.none_authservice,
                  addressController.deployment("${ADDRESS_CONTROLLER_REPO}", "${MULTIINSTANCE}", "", "${ENMASSE_CA_SECRET}", "${ADDRESS_CONTROLLER_CERT_SECRET}"),
                  addressController.internal_service,
                  restapiRoute.route("${RESTAPI_HOSTNAME}") ],
@@ -41,11 +39,6 @@ local images = import "images.jsonnet";
         "value": images.address_controller
       },
       {
-        "name": "NONE_AUTHSERVICE_IMAGE",
-        "description": "The docker image to use for the 'none' auth service",
-        "value": images.none_authservice
-      },
-      {
         "name": "ENMASSE_CA_SECRET",
         "description": "Name of the secret containing the EnMasse CA",
         "value": "enmasse-ca"
@@ -54,11 +47,6 @@ local images = import "images.jsonnet";
         "name": "ADDRESS_CONTROLLER_CERT_SECRET",
         "description": "Name of the secret containing the address controller certificate",
         "value": "address-controller-cert"
-      },
-      {
-        "name": "NONE_AUTHSERVICE_CERT_SECRET_NAME",
-        "description": "The secret to use for the none-authservice certificate",
-        "value": "none-authservice-cert"
       },
     ]
   }
