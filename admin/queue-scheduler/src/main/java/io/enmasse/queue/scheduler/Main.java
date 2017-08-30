@@ -28,7 +28,7 @@ public class Main {
         QueueScheduler scheduler = new QueueScheduler(
                 connection -> Artemis.create(vertx, connection),
                 listenPort,
-                getEnvOrThrow("CERT_DIR"));
+                System.getenv("CERT_DIR"));
 
         scheduler.setProtonSaslAuthenticatorFactory(new DummySaslAuthenticatorFactory());
         ConfigServiceClient configServiceClient = new ConfigServiceClient(configHost, configPort, scheduler);

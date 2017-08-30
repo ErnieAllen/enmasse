@@ -75,7 +75,7 @@ public class QueueScheduler extends AbstractVerticle implements ConfigListener {
         ProtonServerOptions options = new ProtonServerOptions();
         if (certDir != null) {
             options.setSsl(true)
-                    .setClientAuth(ClientAuth.NONE)
+                    .setClientAuth(ClientAuth.REQUIRED)
                     .setPemKeyCertOptions(new PemKeyCertOptions()
                             .setKeyPath(new File(certDir, "tls.key").getAbsolutePath())
                             .setCertPath(new File(certDir, "tls.crt").getAbsolutePath()))
