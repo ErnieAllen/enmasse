@@ -27,7 +27,7 @@ local common = import "common.jsonnet";
   [
     self.service("ragent", addressSpace, [{"name": "amqp", "port": 5671, "targetPort": 55671}]),
     self.service("configuration", addressSpace, [{"name": "amqp", "port": 5672}]),
-    self.service("queue-scheduler", addressSpace, [{"name": "amqp", "port": 5672, "targetPort": 55667}]),
+    self.service("queue-scheduler", addressSpace, [{"name": "amqps", "port": 5671, "targetPort": "amqps-scheduler"}]),
     self.service("console", addressSpace, [{"name": "amqp-ws", "port": 5672, "targetPort": 56720}, {"name": "http", "port": 8080}])
   ],
 
@@ -110,15 +110,55 @@ local common = import "common.jsonnet";
                                }
                              ]
             },
-            common.container("queue-scheduler", scheduler_image, "amqp", 55667, "128Mi", [
-                      {
-                        "name": "CONFIGURATION_SERVICE_HOST",
-                        "value": "localhost"
-                      },
-                      {
-                        "name": "CONFIGURATION_SERVICE_PORT",
-                        "value": "5672"
-                      }]),
+            {
+              "image": scheduler_image,
+              "name": "queue-scheduler",
+              "env": [
+                {
+                  "name": "CONFIGURATION_SERVICE_HOST",
+                  "value": "localhost"
+                },
+                {
+                  "name": "CONFIGURATION_SERVICE_PORT",
+                  "value": "5672"
+                }
+                {
+                  "name": "CERT_DIR",
+                  "value": "/etc/enmasse-certs"
+                },
+                {
+                  "name": "LISTEN_PORT",
+                  "value": "55667"
+                }
+              ],
+              "resources": {
+                  "requests": {
+                      "memory": "128Mi"
+                  },
+                  "limits": {
+                      "memory": "128Mi"
+                  }
+              },
+              "ports": [
+                {
+                  "name": "amqps-scheduler",
+                  "containerPort": 55667,
+                  "protocol": "TCP"
+                }
+              ],
+              "livenessProbe": {
+                "tcpSocket": {
+                  "port": "amqps-scheduler"
+                }
+              },
+              "volumeMounts": [
+                {
+                  "name": "admin-internal-cert",
+                  "mountPath": "/etc/enmasse-certs",
+                  "readOnly": true
+                }
+              ]
+            },
             console.container(console_image, [
                       {
                         "name": "CONFIGURATION_SERVICE_HOST",

@@ -1044,22 +1044,28 @@ objects:
           - env:
             - name: CONFIGURATION_SERVICE_HOST
               value: localhost
-            - name: CONFIGURATION_SERVICE_PORT
-              value: '5672'
+            - name: CERT_DIR
+              value: "/etc/enmasse-certs"
+            - name: LISTEN_PORT
+              value: '55667'
             image: "${QUEUE_SCHEDULER_REPO}"
             livenessProbe:
               tcpSocket:
-                port: amqp
+                port: amqps-scheduler
             name: queue-scheduler
             ports:
             - containerPort: 55667
-              name: amqp
+              name: amqps-scheduler
               protocol: TCP
             resources:
               limits:
                 memory: 128Mi
               requests:
                 memory: 128Mi
+            volumeMounts:
+            - mountPath: "/etc/enmasse-certs"
+              name: admin-internal-cert
+              readOnly: true
           - env:
             - name: CONFIGURATION_SERVICE_HOST
               value: localhost
@@ -1163,9 +1169,9 @@ objects:
       name: queue-scheduler
     spec:
       ports:
-      - name: amqp
-        port: 5672
-        targetPort: 55667
+      - name: amqps
+        port: 5671
+        targetPort: amqps-scheduler
       selector:
         name: admin
   - apiVersion: v1

@@ -23,11 +23,12 @@ public class Main {
         Vertx vertx = Vertx.vertx();
         String configHost = getEnvOrThrow("CONFIGURATION_SERVICE_HOST");
         int configPort = Integer.parseInt(getEnvOrThrow("CONFIGURATION_SERVICE_PORT"));
-        int listenPort = 55667;
+        int listenPort = Integer.parseInt(getEnvOrThrow("LISTEN_PORT"));
 
         QueueScheduler scheduler = new QueueScheduler(
                 connection -> Artemis.create(vertx, connection),
-                listenPort);
+                listenPort,
+                getEnvOrThrow("CERT_DIR"));
 
         scheduler.setProtonSaslAuthenticatorFactory(new DummySaslAuthenticatorFactory());
         ConfigServiceClient configServiceClient = new ConfigServiceClient(configHost, configPort, scheduler);
