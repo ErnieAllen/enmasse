@@ -177,15 +177,16 @@ do
         create_self_signed_cert "oc" "standard-authservice.${NAMESPACE}.svc.cluster.local" "standard-authservice-cert"
         runcmd "oc create secret generic keycloak-credentials --from-literal=admin.username=admin --from-literal=admin.password=$KEYCLOAK_PASSWORD" "Create secret with keycloak admin credentials"
         runcmd "oc process -f $KEYCLOAK_TEMPLATE | oc create -n $NAMESPACE -f -" "Instantiate keycloak template"
-    else if [ "$auth_service" == "none" ]; then
+    elif [ "$auth_service" == "none" ]; then
         create_self_signed_cert "oc" "none-authservice.${NAMESPACE}.svc.cluster.local" "none-authservice-cert"
         runcmd "oc process -f $NONE_AUTHSERVICE_TEMPLATE | oc create -n $NAMESPACE -f -" "Instantiate none-authservice template"
-    else if [ "$auth_service" == "external" ]; then
+    elif [ "$auth_service" == "external" ]; then
+        echo "Nothing to deploy for external"
     else
         echo "Unknown authentication service $auth_service cannot be deployed" 
         exit 1
     fi
-fi
+done
 
 if [[ $TEMPLATE_PARAMS == *"MULTIINSTANCE=true"* ]]; then
     if [ -n "$OS_ALLINONE" ]

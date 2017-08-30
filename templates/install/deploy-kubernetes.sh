@@ -124,10 +124,11 @@ do
         create_self_signed_cert "kubectl" "standard-authservice.${NAMESPACE}.svc.cluster.local" "standard-authservice-cert"
         runcmd "kubectl create secret generic keycloak-credentials --from-literal=admin.username=admin --from-literal=admin.password=$KEYCLOAK_PASSWORD" "Create secret with keycloak admin credentials"
         runcmd "kubectl apply -f $KEYCLOAK_TEMPLATE -n $NAMESPACE" "Deploy Keycloak to $NAMESPACE"
-    else if [ "$auth_service" == "none" ]; then
+    elif [ "$auth_service" == "none" ]; then
         create_self_signed_cert "kubectl" "none-authservice.${NAMESPACE}.svc.cluster.local" "none-authservice-cert"
         runcmd "kubectl apply -f $NONE_AUTHSERVICE_TEMPLATE -n $NAMESPACE" "Deploy none-authservice to $NAMESPACE"
-    else if [ "$auth_service" == "external" ]; then
+    elif [ "$auth_service" == "external" ]; then
+        echo "Nothing to deploy for external"
     else
         echo "Unknown authentication service $auth_service cannot be deployed" 
         exit 1
